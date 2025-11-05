@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from "./ui/select";
 import { Button } from "./ui/button";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 
 interface AssignIssueDialogProps {
   open: boolean;

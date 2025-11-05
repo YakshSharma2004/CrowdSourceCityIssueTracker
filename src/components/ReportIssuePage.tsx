@@ -13,7 +13,7 @@ import {
 } from "./ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { MapPin, Upload, Camera, Navigation } from "lucide-react";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 
 interface ReportIssuePageProps {
   userRole: "citizen" | "staff";
