@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { LoginPage } from "./components/LoginPage";
+import { SignUp } from "./components/SignUp";
 import { MainPage } from "./components/MainPage";
 import { ReportIssuePage } from "./components/ReportIssuePage";
 import { IssueDetailPage } from "./components/IssueDetailPage";
@@ -88,6 +89,8 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState<string>("issues");
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
 
+  const [authMode, setAuthMode] = useState<"login" | "signup">("login");
+
   const handleLogin = (role: "citizen" | "staff") => {
     setUserRole(role);
     setIsLoggedIn(true);
@@ -98,6 +101,7 @@ export default function App() {
     setIsLoggedIn(false);
     setCurrentPage("issues");
     setSelectedIssueId(null);
+    setAuthMode("login");
   };
 
   const handleNavigate = (page: string, issueId?: string) => {
@@ -108,7 +112,10 @@ export default function App() {
   };
 
   if (!isLoggedIn) {
-    return <LoginPage onLogin={handleLogin} />;
+    if (authMode === "signup") {
+      return <SignUp onNavigateToLogin={() => setAuthMode("login")} />;
+    }
+    return <LoginPage onLogin={handleLogin} onSignupClick={() => setAuthMode("signup")} />;
   }
 
   const selectedIssue = selectedIssueId

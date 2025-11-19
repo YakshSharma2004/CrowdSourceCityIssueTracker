@@ -14,6 +14,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { MapPin, Upload, Camera, Navigation } from "lucide-react";
 import { toast } from "sonner";
+import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
 
 interface ReportIssuePageProps {
   userRole: "citizen" | "staff";
@@ -30,6 +31,21 @@ export function ReportIssuePage({ userRole, onLogout, onNavigate }: ReportIssueP
   const [longitude, setLongitude] = useState("");
   const [photos, setPhotos] = useState<File[]>([]);
   const [mapPosition, setMapPosition] = useState({ lat: 40.7128, lng: -74.0060 });
+
+  const { isLoaded } = useJsApiLoader({
+    id: 'google-map-script',
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ""
+  });
+
+  const [map, setMap] = useState<google.maps.Map | null>(null);
+
+  const onLoad = (map: google.maps.Map) => {
+    setMap(map);
+  };
+
+  const onUnmount = () => {
+    setMap(null);
+  };
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -64,25 +80,21 @@ export function ReportIssuePage({ userRole, onLogout, onNavigate }: ReportIssueP
     }
   };
 
-  const handleMapClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    // Convert click position to approximate lat/lng
-    // This is a simplified simulation
-    const lng = -74.0060 + (x / rect.width - 0.5) * 0.1;
-    const lat = 40.7128 + (0.5 - y / rect.height) * 0.1;
-    
-    setLatitude(lat.toFixed(6));
-    setLongitude(lng.toFixed(6));
-    setMapPosition({ lat, lng });
-    toast.success("Location set on map");
+  const handleMapClick = (e: google.maps.MapMouseEvent) => {
+    if (e.latLng) {
+      const lat = e.latLng.lat();
+      const lng = e.latLng.lng();
+
+      setLatitude(lat.toFixed(6));
+      setLongitude(lng.toFixed(6));
+      setMapPosition({ lat, lng });
+      toast.success("Location set on map");
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!title || !description || !category || !severity || !latitude || !longitude) {
       toast.error("Please fill in all required fields");
       return;
@@ -90,7 +102,7 @@ export function ReportIssuePage({ userRole, onLogout, onNavigate }: ReportIssueP
 
     // Mock submission
     toast.success("Issue reported successfully!");
-    
+
     // Reset form
     setTitle("");
     setDescription("");
@@ -99,7 +111,7 @@ export function ReportIssuePage({ userRole, onLogout, onNavigate }: ReportIssueP
     setLatitude("");
     setLongitude("");
     setPhotos([]);
-    
+
     // Navigate back to issues page
     setTimeout(() => {
       onNavigate("issues");
@@ -113,7 +125,7 @@ export function ReportIssuePage({ userRole, onLogout, onNavigate }: ReportIssueP
   return (
     <div className="min-h-screen bg-gray-50">
       <Header userRole={userRole} onLogout={onLogout} onNavigate={onNavigate} currentPage="report" />
-      
+
       <main className="container mx-auto px-4 py-6 max-w-4xl">
         <Card>
           <CardHeader>
@@ -242,46 +254,38 @@ export function ReportIssuePage({ userRole, onLogout, onNavigate }: ReportIssueP
                 <Label>
                   Location <span className="text-destructive">*</span>
                 </Label>
-                
+
                 {/* Interactive Map */}
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <MapPin className="h-4 w-4" />
                     <span>Click on the map to set location</span>
                   </div>
-                  <div
-                    onClick={handleMapClick}
-                    className="relative w-full h-64 bg-gradient-to-br from-blue-100 to-green-100 rounded-lg border-2 border-border overflow-hidden cursor-crosshair group"
-                    style={{
-                      backgroundImage: `
-                        linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
-                        linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px)
-                      `,
-                      backgroundSize: '20px 20px'
-                    }}
-                  >
-                    {/* Map overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-blue-200/30 to-green-200/30" />
-                    
-                    {/* Pin marker */}
-                    {latitude && longitude && (
-                      <div
-                        className="absolute transform -translate-x-1/2 -translate-y-full"
-                        style={{
-                          left: `${((parseFloat(longitude) - (-74.0060 - 0.05)) / 0.1) * 100}%`,
-                          top: `${(1 - (parseFloat(latitude) - (40.7128 - 0.05)) / 0.1) * 100}%`
+                  <div className="relative w-full h-64 rounded-lg border-2 border-border overflow-hidden">
+                    {isLoaded ? (
+                      <GoogleMap
+                        mapContainerStyle={{ width: '100%', height: '100%' }}
+                        center={mapPosition}
+                        zoom={13}
+                        onLoad={onLoad}
+                        onUnmount={onUnmount}
+                        onClick={handleMapClick}
+                        options={{
+                          streetViewControl: false,
+                          mapTypeControl: false,
                         }}
                       >
-                        <MapPin className="h-8 w-8 text-destructive fill-destructive" />
+                        {latitude && longitude && (
+                          <Marker
+                            position={{ lat: parseFloat(latitude), lng: parseFloat(longitude) }}
+                          />
+                        )}
+                      </GoogleMap>
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                        <p>Loading Map...</p>
                       </div>
                     )}
-                    
-                    {/* Hover instruction */}
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/5">
-                      <div className="bg-white/90 px-4 py-2 rounded-md shadow-lg">
-                        <p className="text-muted-foreground">Click to set location</p>
-                      </div>
-                    </div>
                   </div>
                 </div>
 
