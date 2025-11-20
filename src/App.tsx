@@ -6,6 +6,8 @@ import { ReportIssuePage } from "./components/ReportIssuePage";
 import { IssueDetailPage } from "./components/IssueDetailPage";
 import { AnalyticsPage } from "./components/AnalyticsPage";
 import { Toaster } from "./components/ui/sonner";
+import { SmoothCursor } from "@/components/ui/smooth-cursor";
+
 
 // Mock data
 const mockIssues = [
@@ -124,6 +126,7 @@ export default function App() {
 
   return (
     <>
+      <SmoothCursor />
       {currentPage === "issues" && (
         <MainPage userRole={userRole} onLogout={handleLogout} onNavigate={handleNavigate} />
       )}

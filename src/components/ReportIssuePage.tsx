@@ -37,15 +37,7 @@ export function ReportIssuePage({ userRole, onLogout, onNavigate }: ReportIssueP
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ""
   });
 
-  const [map, setMap] = useState<google.maps.Map | null>(null);
 
-  const onLoad = (map: google.maps.Map) => {
-    setMap(map);
-  };
-
-  const onUnmount = () => {
-    setMap(null);
-  };
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -267,8 +259,7 @@ export function ReportIssuePage({ userRole, onLogout, onNavigate }: ReportIssueP
                         mapContainerStyle={{ width: '100%', height: '100%' }}
                         center={mapPosition}
                         zoom={13}
-                        onLoad={onLoad}
-                        onUnmount={onUnmount}
+
                         onClick={handleMapClick}
                         options={{
                           streetViewControl: false,
