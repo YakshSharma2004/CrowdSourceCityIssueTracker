@@ -1,0 +1,13 @@
+smooth cursor::
+https://magicui.design/docs/components/smooth-cursor
+
+star background::
+https://www.reactbits.dev/get-started/index
+
+minecraft cursor design::
+https://www.rw-designer.com/gallery?search=MineCraft+Pickaxe+cursors
+
+some ui components::
+https://ui.shadcn.com/docs/components/tooltip
+
+ui designing :::
