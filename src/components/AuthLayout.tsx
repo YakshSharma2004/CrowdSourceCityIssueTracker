@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface AuthLayoutProps {
     children: React.ReactNode;
@@ -30,10 +30,10 @@ export function AuthLayout({ children }: AuthLayoutProps) {
         <>
             <style>
                 {`
-                    .auth-layout-cursor, .auth-layout-cursor * {
-                        cursor: url('/minecraft%20pickaxe.cur'), auto !important;
-                    }
-                `}
+          .auth-layout-cursor, .auth-layout-cursor * {
+            cursor: url('/minecraft%20pickaxe.cur'), auto !important;
+          }
+        `}
             </style>
             <div
                 ref={containerRef}

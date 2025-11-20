@@ -7,3 +7,4 @@ dist/
 *.log
 coverage/
 database_creation_scripts/
+build/assets/

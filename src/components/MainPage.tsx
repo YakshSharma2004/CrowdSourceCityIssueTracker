@@ -2,11 +2,13 @@ import { useState, useMemo } from "react";
 import { Header } from "./Header";
 import { FilterBar } from "./FilterBar";
 import { IssueCard, Issue } from "./IssueCard";
+import { motion, AnimatePresence } from "framer-motion";
+
 
 interface MainPageProps {
   userRole: "citizen" | "staff";
   onLogout: () => void;
-  onNavigate: (page: string) => void;
+  onNavigate: (page: string, issueId?: string) => void;
 }
 
 // Mock data
@@ -149,41 +151,73 @@ export function MainPage({ userRole, onLogout, onNavigate }: MainPageProps) {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header userRole={userRole} onLogout={onLogout} onNavigate={onNavigate} currentPage="issues" />
-      
-      <FilterBar
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        category={category}
-        onCategoryChange={setCategory}
-        status={status}
-        onStatusChange={setStatus}
-        severity={severity}
-        onSeverityChange={setSeverity}
-        sortBy={sortBy}
-        onSortChange={setSortBy}
-      />
 
-      <main className="container mx-auto px-4 py-6">
-        <div className="space-y-4">
-          {filteredIssues.length > 0 ? (
-            filteredIssues.map((issue) => (
-              <IssueCard
-                key={issue.id}
-                issue={issue}
-                isStaff={userRole === "staff"}
-                onViewDetails={handleViewDetails}
-                onAssign={handleAssign}
-              />
-            ))
-          ) : (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">
-                No issues found matching your filters.
-              </p>
-            </div>
-          )}
-        </div>
-      </main>
+      <main className="container mx-auto px-4 py-6 space-y-8">
+        <div className="space-y-6">
+          <FilterBar
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            category={category}
+            onCategoryChange={setCategory}
+            status={status}
+            onStatusChange={setStatus}
+            severity={severity}
+            onSeverityChange={setSeverity}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
+          />
+
+          <motion.div
+            layout
+            className="space-y-4"
+            variants={{
+              hidden: { opacity: 0 },
+              show: {
+                opacity: 1,
+                transition: {
+                  staggerChildren: 0.1
+                }
+              }
+            }}
+            initial="hidden"
+            animate="show"
+          >
+            <AnimatePresence mode="popLayout">
+              {filteredIssues.length > 0 ? (
+                filteredIssues.map((issue) => (
+                  <motion.div
+                    key={issue.id}
+                    layout
+                    variants={{
+                      hidden: { opacity: 0, y: 20 },
+                      show: { opacity: 1, y: 0 }
+                    }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <IssueCard
+                      issue={issue}
+                      isStaff={userRole === "staff"}
+                      onViewDetails={handleViewDetails}
+                      onAssign={handleAssign}
+                    />
+                  </motion.div>
+                ))
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-center py-12"
+                >
+                  <p className="text-muted-foreground">
+                    No issues found matching your filters.
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        </div >
+      </main >
 
       <footer className="border-t bg-white mt-12">
         <div className="container mx-auto px-4 py-6">
@@ -192,6 +226,6 @@ export function MainPage({ userRole, onLogout, onNavigate }: MainPageProps) {
           </p>
         </div>
       </footer>
-    </div>
+    </div >
   );
 }
