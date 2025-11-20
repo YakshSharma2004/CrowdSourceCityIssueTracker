@@ -115,7 +115,7 @@ export function ReportIssuePage({ userRole, onLogout, onNavigate }: ReportIssueP
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted/40 transition-colors duration-300">
       <Header userRole={userRole} onLogout={onLogout} onNavigate={onNavigate} currentPage="report" />
 
       <main className="container mx-auto px-4 py-6 max-w-4xl">
@@ -342,7 +342,7 @@ export function ReportIssuePage({ userRole, onLogout, onNavigate }: ReportIssueP
         </Card>
       </main>
 
-      <footer className="border-t bg-white mt-12">
+      <footer className="border-t bg-background mt-12">
         <div className="container mx-auto px-4 py-6">
           <p className="text-center text-muted-foreground">
             © 2025 City Issue Tracker. All rights reserved.

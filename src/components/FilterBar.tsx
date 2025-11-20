@@ -34,7 +34,7 @@ export function FilterBar({
   onSortChange,
 }: FilterBarProps) {
   return (
-    <div className="border-b bg-white">
+    <div className="border-b bg-background">
       <div className="container mx-auto px-4 py-4">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
@@ -46,7 +46,7 @@ export function FilterBar({
               className="pl-9"
             />
           </div>
-          
+
           <Select value={category} onValueChange={onCategoryChange}>
             <SelectTrigger className="w-full sm:w-[150px]">
               <SelectValue placeholder="Category" />
@@ -60,7 +60,7 @@ export function FilterBar({
               <SelectItem value="water">Water</SelectItem>
             </SelectContent>
           </Select>
-          
+
           <Select value={status} onValueChange={onStatusChange}>
             <SelectTrigger className="w-full sm:w-[150px]">
               <SelectValue placeholder="Status" />
@@ -72,7 +72,7 @@ export function FilterBar({
               <SelectItem value="resolved">Resolved</SelectItem>
             </SelectContent>
           </Select>
-          
+
           <Select value={severity} onValueChange={onSeverityChange}>
             <SelectTrigger className="w-full sm:w-[150px]">
               <SelectValue placeholder="Severity" />
@@ -85,7 +85,7 @@ export function FilterBar({
               <SelectItem value="critical">Critical</SelectItem>
             </SelectContent>
           </Select>
-          
+
           <Select value={sortBy} onValueChange={onSortChange}>
             <SelectTrigger className="w-full sm:w-[150px]">
               <SelectValue placeholder="Sort by" />

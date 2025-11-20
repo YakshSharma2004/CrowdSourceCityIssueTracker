@@ -7,6 +7,7 @@ import { IssueDetailPage } from "./components/IssueDetailPage";
 import { AnalyticsPage } from "./components/AnalyticsPage";
 import { Toaster } from "./components/ui/sonner";
 import { SmoothCursor } from "@/components/ui/smooth-cursor";
+import { ThemeProvider } from "./components/ThemeContext";
 
 
 // Mock data
@@ -113,46 +114,56 @@ export default function App() {
     }
   };
 
-  if (!isLoggedIn) {
-    if (authMode === "signup") {
-      return <SignUp onNavigateToLogin={() => setAuthMode("login")} />;
-    }
-    return <LoginPage onLogin={handleLogin} onSignupClick={() => setAuthMode("signup")} />;
-  }
-
   const selectedIssue = selectedIssueId
     ? mockIssues.find((issue) => issue.id === selectedIssueId)
     : null;
 
+  const renderContent = () => {
+    if (!isLoggedIn) {
+      if (authMode === "signup") {
+        return <SignUp onNavigateToLogin={() => setAuthMode("login")} onSignup={function (role: "citizen" | "staff"): void {
+          throw new Error("Function not implemented.");
+        }} />;
+      }
+      return <LoginPage onLogin={handleLogin} onSignupClick={() => setAuthMode("signup")} />;
+    }
+
+    return (
+      <>
+        <SmoothCursor />
+        {currentPage === "issues" && (
+          <MainPage userRole={userRole} onLogout={handleLogout} onNavigate={handleNavigate} />
+        )}
+        {currentPage === "report" && (
+          <ReportIssuePage userRole={userRole} onLogout={handleLogout} onNavigate={handleNavigate} />
+        )}
+        {currentPage === "issue-detail" && selectedIssue && (
+          <IssueDetailPage
+            userRole={userRole}
+            onLogout={handleLogout}
+            onNavigate={handleNavigate}
+            issue={selectedIssue}
+          />
+        )}
+        {currentPage === "map" && (
+          <MainPage userRole={userRole} onLogout={handleLogout} onNavigate={handleNavigate} />
+        )}
+        {currentPage === "analytics" && (
+          <AnalyticsPage
+            userRole={userRole}
+            onLogout={handleLogout}
+            onNavigate={handleNavigate}
+            issues={mockIssues}
+          />
+        )}
+      </>
+    );
+  };
+
   return (
-    <>
-      <SmoothCursor />
-      {currentPage === "issues" && (
-        <MainPage userRole={userRole} onLogout={handleLogout} onNavigate={handleNavigate} />
-      )}
-      {currentPage === "report" && (
-        <ReportIssuePage userRole={userRole} onLogout={handleLogout} onNavigate={handleNavigate} />
-      )}
-      {currentPage === "issue-detail" && selectedIssue && (
-        <IssueDetailPage
-          userRole={userRole}
-          onLogout={handleLogout}
-          onNavigate={handleNavigate}
-          issue={selectedIssue}
-        />
-      )}
-      {currentPage === "map" && (
-        <MainPage userRole={userRole} onLogout={handleLogout} onNavigate={handleNavigate} />
-      )}
-      {currentPage === "analytics" && (
-        <AnalyticsPage
-          userRole={userRole}
-          onLogout={handleLogout}
-          onNavigate={handleNavigate}
-          issues={mockIssues}
-        />
-      )}
+    <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+      {renderContent()}
       <Toaster />
-    </>
+    </ThemeProvider>
   );
 }

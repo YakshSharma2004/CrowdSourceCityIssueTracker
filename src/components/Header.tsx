@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { AlertCircle, LogOut } from "lucide-react";
 import { Button } from "./ui/button";
+import { ThemeToggle } from "./ThemeToggle";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,7 +29,7 @@ export function Header({ userRole, onLogout, onNavigate, currentPage = "issues" 
   };
 
   return (
-    <header className="border-b bg-white sticky top-0 z-10">
+    <header className="border-b bg-background sticky top-0 z-10 transition-colors duration-300">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-8">
@@ -36,51 +37,47 @@ export function Header({ userRole, onLogout, onNavigate, currentPage = "issues" 
               <AlertCircle className="h-6 w-6 text-primary" />
               <span>City Tracker</span>
             </div>
-            
+
             <nav className="hidden md:flex items-center gap-6">
               <button
                 onClick={() => handleNavClick("issues")}
-                className={`transition-colors ${
-                  currentPage === "issues"
-                    ? "text-foreground"
-                    : "text-muted-foreground hover:text-primary"
-                }`}
+                className={`transition-colors ${currentPage === "issues"
+                  ? "text-foreground"
+                  : "text-muted-foreground hover:text-primary"
+                  }`}
               >
                 Issues
               </button>
               <button
                 onClick={() => handleNavClick("map")}
-                className={`transition-colors ${
-                  currentPage === "map"
-                    ? "text-foreground"
-                    : "text-muted-foreground hover:text-primary"
-                }`}
+                className={`transition-colors ${currentPage === "map"
+                  ? "text-foreground"
+                  : "text-muted-foreground hover:text-primary"
+                  }`}
               >
                 Map
               </button>
               <button
                 onClick={() => handleNavClick("report")}
-                className={`transition-colors ${
-                  currentPage === "report"
-                    ? "text-foreground"
-                    : "text-muted-foreground hover:text-primary"
-                }`}
+                className={`transition-colors ${currentPage === "report"
+                  ? "text-foreground"
+                  : "text-muted-foreground hover:text-primary"
+                  }`}
               >
                 Report Issue
               </button>
               <button
                 onClick={() => handleNavClick("analytics")}
-                className={`transition-colors ${
-                  currentPage === "analytics"
-                    ? "text-foreground"
-                    : "text-muted-foreground hover:text-primary"
-                }`}
+                className={`transition-colors ${currentPage === "analytics"
+                  ? "text-foreground"
+                  : "text-muted-foreground hover:text-primary"
+                  }`}
               >
                 Analytics
               </button>
             </nav>
           </div>
-          
+
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
@@ -96,7 +93,8 @@ export function Header({ userRole, onLogout, onNavigate, currentPage = "issues" 
                 {userRole === "staff" ? "Staff" : "Citizen"}
               </span>
             </Button>
-            
+
+            <ThemeToggle />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8">

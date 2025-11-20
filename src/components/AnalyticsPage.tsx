@@ -39,17 +39,7 @@ interface AnalyticsPageProps {
   issues: Issue[];
 }
 
-const COLORS = {
-  open: "#3b82f6",
-  "in-progress": "#f59e0b",
-  resolved: "#10b981",
-  roads: "#ef4444",
-  lighting: "#f59e0b",
-  sanitation: "#8b5cf6",
-  parks: "#10b981",
-  water: "#06b6d4",
-  other: "#6b7280",
-};
+
 
 export function AnalyticsPage({
   userRole,
@@ -106,7 +96,7 @@ export function AnalyticsPage({
     for (let i = days - 1; i >= 0; i--) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split("T")[0];
+
 
       const issuesOnDate = issues.filter((issue) => {
         const reportedDate = new Date(issue.reportedDate);
@@ -123,7 +113,7 @@ export function AnalyticsPage({
   }, [issues]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted/40 transition-colors duration-300">
       <Header
         userRole={userRole}
         onLogout={onLogout}
@@ -214,9 +204,10 @@ export function AnalyticsPage({
                   <YAxis tick={{ fontSize: 12 }} stroke="#6b7280" />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "#fff",
-                      border: "1px solid #e5e7eb",
+                      backgroundColor: "var(--background)",
+                      border: "1px solid var(--border)",
                       borderRadius: "8px",
+                      color: "var(--foreground)",
                     }}
                   />
                   <Bar dataKey="count" fill="#3b82f6" radius={[8, 8, 0, 0]} />
@@ -243,16 +234,17 @@ export function AnalyticsPage({
                     dataKey="value"
                     label={(entry) => `${entry.name}: ${entry.value}`}
                   >
-                    {statusData.map((entry, index) => {
+                    {statusData.map((_, index) => {
                       const colors = ["#3b82f6", "#f59e0b", "#10b981"];
                       return <Cell key={`cell-${index}`} fill={colors[index]} />;
                     })}
                   </Pie>
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "#fff",
-                      border: "1px solid #e5e7eb",
+                      backgroundColor: "var(--background)",
+                      border: "1px solid var(--border)",
                       borderRadius: "8px",
+                      color: "var(--foreground)",
                     }}
                   />
                 </PieChart>
@@ -278,9 +270,10 @@ export function AnalyticsPage({
                   <YAxis tick={{ fontSize: 12 }} stroke="#6b7280" />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "#fff",
-                      border: "1px solid #e5e7eb",
+                      backgroundColor: "var(--background)",
+                      border: "1px solid var(--border)",
                       borderRadius: "8px",
+                      color: "var(--foreground)",
                     }}
                   />
                   <Legend />
@@ -300,7 +293,7 @@ export function AnalyticsPage({
         </div>
       </main>
 
-      <footer className="border-t bg-white mt-12">
+      <footer className="border-t bg-background mt-12">
         <div className="container mx-auto px-4 py-6">
           <p className="text-center text-muted-foreground">
             © 2025 City Issue Tracker. All rights reserved.
