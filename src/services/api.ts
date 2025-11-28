@@ -1,4 +1,4 @@
-import { PageableResponse, Issue } from "../lib/types";
+import { PageableResponse, Issue, Comment, User } from "../lib/types";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
@@ -113,6 +113,46 @@ export const api = {
         if (!response.ok) {
             if (response.status === 401) throw new Error("Unauthorized");
             throw new Error("Failed to fetch issue");
+        }
+        return response.json();
+    },
+    getCommentsByIssueId: async (id: string): Promise<Comment[]> => {
+        const response = await fetch(`${BASE_URL}/api/issues/${id}/comments`, {
+            headers: getAuthHeader(),
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) throw new Error("Unauthorized");
+            throw new Error("Failed to fetch comments");
+        }
+        return response.json();
+    },
+
+    addComment: async (issueId: string, content: string, authorId: number): Promise<Comment> => {
+        const response = await fetch(`${BASE_URL}/api/issues/${issueId}/comments`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                ...getAuthHeader(),
+            },
+            body: JSON.stringify({ content, authorId }),
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) throw new Error("Unauthorized");
+            throw new Error("Failed to add comment");
+        }
+        return response.json();
+    },
+
+    getCurrentUser: async (): Promise<User> => {
+        const response = await fetch(`${BASE_URL}/api/auth/me`, {
+            headers: getAuthHeader(),
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) throw new Error("Unauthorized");
+            throw new Error("Failed to fetch current user");
         }
         return response.json();
     },

@@ -47,7 +47,7 @@ async function testLogin(email, password) {
 
   const token = Buffer.from(`${email}:${password}`).toString("base64");
 
-  const resp = await fetch(`${BASE_URL}/api/issues/1?page=0&size=1`, {
+  const resp = await fetch(`${BASE_URL}/api/auth/me`, {
     method: "GET",
     headers: {
       Authorization: `Basic ${token}`,
@@ -57,7 +57,12 @@ async function testLogin(email, password) {
 
   const text = await resp.text();
   console.log("Status:", resp.status, resp.statusText);
-  console.log("Response body:\n", text);
+  try {
+      console.log("Response JSON keys:", Object.keys(JSON.parse(text)));
+      console.log("Response body:", text);
+  } catch (e) {
+      console.log("Response body (not JSON):", text);
+  }
 
   if (resp.status === 401) {
     console.log("\n❌ Still Unauthorized: check that SecurityConfig uses BCrypt and user row exists.");

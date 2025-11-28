@@ -17,16 +17,10 @@ import {
   Image as ImageIcon,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Issue } from "../lib/types";
+import { Issue, Comment } from "../lib/types";
 import { api } from "../services/api";
 
-interface Comment {
-  id: string;
-  author: string;
-  role: "citizen" | "staff";
-  date: string;
-  text: string;
-}
+
 
 interface IssueDetailPageProps {
   userRole: "citizen" | "staff";
@@ -43,29 +37,29 @@ const mockPhotos = [
 ];
 
 // Mock comments
-const mockComments: Comment[] = [
-  {
-    id: "1",
-    author: "Sarah Johnson",
-    role: "citizen",
-    date: "2025-10-17T10:30:00",
-    text: "I drove over this pothole yesterday and it damaged my tire. This needs to be fixed urgently!",
-  },
-  {
-    id: "2",
-    author: "Mike Chen",
-    role: "staff",
-    date: "2025-10-17T14:15:00",
-    text: "We have received your report and our team is currently assessing the damage. We will provide an update within 48 hours.",
-  },
-  {
-    id: "3",
-    author: "John Smith",
-    role: "citizen",
-    date: "2025-10-17T16:45:00",
-    text: "Thank you for the quick response! Looking forward to the update.",
-  },
-];
+// const mockComments: Comment[] = [
+//   {
+//     id: "1",
+//     author: "Sarah Johnson",
+//     role: "citizen",
+//     date: "2025-10-17T10:30:00",
+//     text: "I drove over this pothole yesterday and it damaged my tire. This needs to be fixed urgently!",
+//   },
+//   {
+//     id: "2",
+//     author: "Mike Chen",
+//     role: "staff",
+//     date: "2025-10-17T14:15:00",
+//     text: "We have received your report and our team is currently assessing the damage. We will provide an update within 48 hours.",
+//   },
+//   {
+//     id: "3",
+//     author: "John Smith",
+//     role: "citizen",
+//     date: "2025-10-17T16:45:00",
+//     text: "Thank you for the quick response! Looking forward to the update.",
+//   },
+// ];
 
 export function IssueDetailPage({
   userRole,
@@ -78,7 +72,8 @@ export function IssueDetailPage({
   const [error, setError] = useState<string | null>(null);
   const [upvotes, setUpvotes] = useState(0);
   const [hasUpvoted, setHasUpvoted] = useState(false);
-  const [comments, setComments] = useState<Comment[]>(mockComments);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [newComment, setNewComment] = useState("");
   const [showAssignDialog, setShowAssignDialog] = useState(false);
 
@@ -97,8 +92,29 @@ export function IssueDetailPage({
       }
     };
 
+    const fetchComments = async () => {
+      try {
+        const data = await api.getCommentsByIssueId(issueId);
+        setComments(data);
+      } catch (err) {
+        console.error("Failed to fetch comments:", err);
+        toast.error("Failed to load comments");
+      }
+    };
+
+    const fetchCurrentUser = async () => {
+      try {
+        const user = await api.getCurrentUser();
+        setCurrentUserId(user.id);
+      } catch (err) {
+        console.error("Failed to fetch current user:", err);
+      }
+    };
+
     if (issueId) {
+      fetchComments();
       fetchIssue();
+      fetchCurrentUser();
     }
   }, [issueId]);
 
@@ -127,23 +143,25 @@ export function IssueDetailPage({
     }
   };
 
-  const handleAddComment = () => {
+  const handleAddComment = async () => {
     if (!newComment.trim()) {
       toast.error("Please enter a comment");
       return;
     }
 
-    const comment: Comment = {
-      id: Date.now().toString(),
-      author: userRole === "staff" ? "Staff Member" : "Current User",
-      role: userRole,
-      date: new Date().toISOString(),
-      text: newComment,
-    };
-
-    setComments([...comments, comment]);
-    setNewComment("");
-    toast.success("Comment added");
+    try {
+      if (!currentUserId) {
+        toast.error("User not authenticated");
+        return;
+      }
+      const addedComment = await api.addComment(issueId, newComment, currentUserId);
+      setComments([...comments, addedComment]);
+      setNewComment("");
+      toast.success("Comment added");
+    } catch (err) {
+      console.error("Failed to add comment:", err);
+      toast.error("Failed to add comment");
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -337,7 +355,7 @@ export function IssueDetailPage({
                     <div className="flex items-center gap-2">
                       <span className="flex items-center gap-1.5">
                         <User className="h-4 w-4" />
-                        <span>{comment.author}</span>
+                        <span>{comment.authorName}</span>
                       </span>
                       {comment.role === "staff" && (
                         <Badge variant="outline" className="text-xs">
@@ -346,10 +364,10 @@ export function IssueDetailPage({
                       )}
                       <span className="text-muted-foreground">•</span>
                       <span className="text-muted-foreground">
-                        {formatRelativeDate(comment.date)}
+                        {formatRelativeDate(comment.createdAt)}
                       </span>
                     </div>
-                    <p className="text-muted-foreground pl-5">{comment.text}</p>
+                    <p className="text-muted-foreground pl-5">{comment.content}</p>
                   </div>
                 ))}
               </div>

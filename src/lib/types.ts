@@ -12,6 +12,23 @@ export interface Issue {
     upvotes?: number; // Optional, might be added later
 }
 
+export interface Comment {
+    id: number;
+    issueId: number;
+    authorId: number;
+    authorName: string;
+    content: string;
+    createdAt: string;
+    role?: "citizen" | "staff"; // Optional as it's not in the current response
+}
+
+export interface User {
+    id: number;
+    email: string;
+    fullName: string;
+    role: "CITIZEN" | "STAFF";
+}
+
 export interface PageableResponse<T> {
     content: T[];
     pageable: {
