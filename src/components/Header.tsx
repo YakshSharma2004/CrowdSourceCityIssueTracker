@@ -13,6 +13,7 @@ import {
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { ProfileDialog } from "./ProfileDialog";
 
+
 interface HeaderProps {
   userRole: "citizen" | "staff";
   onLogout: () => void;

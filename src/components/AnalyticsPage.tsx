@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Header } from "./Header";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import {
@@ -17,41 +17,41 @@ import {
   Cell,
 } from "recharts";
 import { CheckCircle, AlertCircle, Clock } from "lucide-react";
-
-interface Issue {
-  id: string;
-  title: string;
-  description: string;
-  status: "open" | "in-progress" | "resolved";
-  severity: "low" | "medium" | "high" | "critical";
-  category: string;
-  address: string;
-  reportedBy: string;
-  reportedDate: string;
-  upvotes: number;
-  resolvedDate?: string;
-}
+import { Issue } from "../lib/types";
+import { api } from "../services/api";
 
 interface AnalyticsPageProps {
   userRole: "citizen" | "staff";
   onLogout: () => void;
   onNavigate: (page: string) => void;
-  issues: Issue[];
 }
-
-
 
 export function AnalyticsPage({
   userRole,
   onLogout,
   onNavigate,
-  issues,
 }: AnalyticsPageProps) {
+  const [issues, setIssues] = useState<Issue[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchIssues = async () => {
+      try {
+        const data = await api.getIssues(0, 100);
+        setIssues(data.content);
+      } catch (err) {
+        console.error("Failed to fetch issues for analytics:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchIssues();
+  }, []);
   // Calculate statistics
   const stats = useMemo(() => {
-    const openIssues = issues.filter((i) => i.status === "open").length;
-    const resolvedIssues = issues.filter((i) => i.status === "resolved").length;
-    const inProgressIssues = issues.filter((i) => i.status === "in-progress").length;
+    const openIssues = issues.filter((i) => i.status === "OPEN").length;
+    const resolvedIssues = issues.filter((i) => i.status === "RESOLVED").length;
+    const inProgressIssues = issues.filter((i) => i.status === "IN_PROGRESS").length;
 
     // Calculate average resolution time (mock data - assume resolved issues took 3-7 days)
     const avgResolutionTime = resolvedIssues > 0 ? 4.5 : 0;
@@ -99,7 +99,7 @@ export function AnalyticsPage({
 
 
       const issuesOnDate = issues.filter((issue) => {
-        const reportedDate = new Date(issue.reportedDate);
+        const reportedDate = new Date(issue.createdAt);
         return reportedDate <= date;
       }).length;
 

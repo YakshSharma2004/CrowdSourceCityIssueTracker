@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Header } from "./Header";
 import { Card, CardContent } from "./ui/card";
 import { Badge } from "./ui/badge";
@@ -17,7 +17,8 @@ import {
   Image as ImageIcon,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Issue } from "./IssueCard";
+import { Issue } from "../lib/types";
+import { api } from "../services/api";
 
 interface Comment {
   id: string;
@@ -31,7 +32,7 @@ interface IssueDetailPageProps {
   userRole: "citizen" | "staff";
   onLogout: () => void;
   onNavigate: (page: string, issueId?: string) => void;
-  issue: Issue;
+  issueId: string;
 }
 
 // Mock photo URLs
@@ -70,13 +71,49 @@ export function IssueDetailPage({
   userRole,
   onLogout,
   onNavigate,
-  issue,
+  issueId,
 }: IssueDetailPageProps) {
-  const [upvotes, setUpvotes] = useState(issue.upvotes);
+  const [issue, setIssue] = useState<Issue | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [upvotes, setUpvotes] = useState(0);
   const [hasUpvoted, setHasUpvoted] = useState(false);
   const [comments, setComments] = useState<Comment[]>(mockComments);
   const [newComment, setNewComment] = useState("");
   const [showAssignDialog, setShowAssignDialog] = useState(false);
+
+  useEffect(() => {
+    const fetchIssue = async () => {
+      try {
+        setLoading(true);
+        const data = await api.getIssueById(issueId);
+        setIssue(data);
+        setUpvotes(data.upvotes || 0);
+      } catch (err) {
+        console.error("Failed to fetch issue:", err);
+        setError("Failed to load issue details.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (issueId) {
+      fetchIssue();
+    }
+  }, [issueId]);
+
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
+
+  if (error || !issue) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
+        <p className="text-red-500">{error || "Issue not found"}</p>
+        <Button onClick={() => onNavigate("issues")}>Back to Issues</Button>
+      </div>
+    );
+  }
 
   const handleUpvote = () => {
     if (hasUpvoted) {
@@ -194,7 +231,7 @@ export function IssueDetailPage({
                   <h1 className="mb-3">{issue.title}</h1>
                   <div className="flex flex-wrap gap-2">
                     <Badge className={getStatusColor(issue.status)}>
-                      {issue.status === "in-progress"
+                      {issue.status === "IN_PROGRESS"
                         ? "In Progress"
                         : issue.status.toUpperCase()}
                     </Badge>
@@ -206,11 +243,10 @@ export function IssueDetailPage({
 
                 <button
                   onClick={handleUpvote}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
-                    hasUpvoted
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-secondary hover:bg-secondary/80"
-                  }`}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${hasUpvoted
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-secondary hover:bg-secondary/80"
+                    }`}
                 >
                   <ArrowBigUp
                     className={`h-5 w-5 ${hasUpvoted ? "fill-current" : ""}`}
@@ -231,11 +267,11 @@ export function IssueDetailPage({
                 </div>
                 <div className="flex items-center gap-1.5">
                   <User className="h-4 w-4" />
-                  <span>Reporter: {issue.reportedBy}</span>
+                  <span>Reporter: {issue.reporterName}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <Calendar className="h-4 w-4" />
-                  <span>Created: {formatDate(issue.reportedDate)}</span>
+                  <span>Created: {formatDate(issue.createdAt)}</span>
                 </div>
               </div>
             </div>
@@ -347,7 +383,7 @@ export function IssueDetailPage({
       <AssignIssueDialog
         open={showAssignDialog}
         onOpenChange={setShowAssignDialog}
-        issueId={issue.id}
+        issueId={issue.id.toString()}
         issueTitle={issue.title}
       />
     </div>

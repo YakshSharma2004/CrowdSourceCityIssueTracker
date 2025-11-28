@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/
 import { AuthLayout } from "./AuthLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { AlertCircle } from "lucide-react";
+import { api } from "../services/api";
 
 interface LoginPageProps {
   onLogin: (role: "citizen" | "staff") => void;
@@ -15,10 +16,21 @@ interface LoginPageProps {
 export function LoginPage({ onLogin, onSignupClick }: LoginPageProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleLogin = (role: "citizen" | "staff") => {
-    // Mock login - in real app, this would validate credentials
-    onLogin(role);
+  const handleLogin = async (role: "citizen" | "staff") => {
+    setError(null);
+    setIsLoading(true);
+    try {
+      await api.login(email, password);
+      onLogin(role);
+    } catch (err: any) {
+      console.error("Login failed:", err);
+      setError(err.message || "Invalid email or password");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -41,6 +53,11 @@ export function LoginPage({ onLogin, onSignupClick }: LoginPageProps) {
             </TabsList>
 
             <TabsContent value="citizen" className="space-y-4">
+              {error && (
+                <div className="p-3 text-sm text-red-500 bg-red-50 rounded-md">
+                  {error}
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="citizen-email">Email</Label>
                 <Input
@@ -49,6 +66,7 @@ export function LoginPage({ onLogin, onSignupClick }: LoginPageProps) {
                   placeholder="citizen@email.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  disabled={isLoading}
                 />
               </div>
               <div className="space-y-2">
@@ -59,10 +77,11 @@ export function LoginPage({ onLogin, onSignupClick }: LoginPageProps) {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  disabled={isLoading}
                 />
               </div>
-              <Button className="w-full" onClick={() => handleLogin("citizen")}>
-                Login as Citizen
+              <Button className="w-full" onClick={() => handleLogin("citizen")} disabled={isLoading}>
+                {isLoading ? "Logging in..." : "Login as Citizen"}
               </Button>
               <p className="text-center text-sm text-muted-foreground">
                 Don't have an account?{" "}
@@ -71,6 +90,11 @@ export function LoginPage({ onLogin, onSignupClick }: LoginPageProps) {
             </TabsContent>
 
             <TabsContent value="staff" className="space-y-4">
+              {error && (
+                <div className="p-3 text-sm text-red-500 bg-red-50 rounded-md">
+                  {error}
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="staff-email">Email</Label>
                 <Input
@@ -79,6 +103,7 @@ export function LoginPage({ onLogin, onSignupClick }: LoginPageProps) {
                   placeholder="staff@city.gov"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  disabled={isLoading}
                 />
               </div>
               <div className="space-y-2">
@@ -89,10 +114,11 @@ export function LoginPage({ onLogin, onSignupClick }: LoginPageProps) {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  disabled={isLoading}
                 />
               </div>
-              <Button className="w-full" onClick={() => handleLogin("staff")}>
-                Login as Staff
+              <Button className="w-full" onClick={() => handleLogin("staff")} disabled={isLoading}>
+                {isLoading ? "Logging in..." : "Login as Staff"}
               </Button>
             </TabsContent>
           </Tabs>

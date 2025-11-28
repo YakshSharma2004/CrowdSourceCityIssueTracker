@@ -7,6 +7,8 @@ import { AuthLayout } from "./AuthLayout";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertCircle, ArrowLeft } from "lucide-react";
+import { api } from "../services/api";
+import { toast } from "sonner";
 
 interface SignUpProps {
     onSignup: (role: "citizen" | "staff") => void;
@@ -16,12 +18,40 @@ interface SignUpProps {
 export function SignUp({ onSignup, onNavigateToLogin }: SignUpProps) {
     const [isLoading, setIsLoading] = useState(false);
 
+    // Citizen Form State
+    const [firstName, setFirstName] = useState("");
+    const [lastName, setLastName] = useState("");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+
+    // Staff Form State (Mock for now as backend only supports citizen signup via script logic)
+    const [staffFirstName, setStaffFirstName] = useState("");
+    const [staffLastName, setStaffLastName] = useState("");
+    const [staffId, setStaffId] = useState("");
+    const [department, setDepartment] = useState("");
+    const [staffPassword, setStaffPassword] = useState("");
+
     const handleSignup = async (role: "citizen" | "staff") => {
         setIsLoading(true);
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        setIsLoading(false);
-        onSignup(role);
+        try {
+            if (role === "citizen") {
+                const fullName = `${firstName} ${lastName}`.trim();
+                // Add artificial delay as requested
+                await new Promise((resolve) => setTimeout(resolve, 3000));
+                await api.signup(email, password, fullName);
+                toast.success("Account created successfully! Logging you in...");
+                onSignup("citizen");
+            } else {
+                // Staff signup logic (if different)
+                // For now, we'll assume same endpoint or show not implemented
+                toast.error("Staff signup is not yet supported via the public interface.");
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error("Signup failed. Please try again.");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -65,11 +95,25 @@ export function SignUp({ onSignup, onNavigateToLogin }: SignUpProps) {
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <Label htmlFor="first-name">First name</Label>
-                                            <Input id="first-name" placeholder="John" required className="h-10" />
+                                            <Input
+                                                id="first-name"
+                                                placeholder="John"
+                                                required
+                                                className="h-10"
+                                                value={firstName}
+                                                onChange={(e) => setFirstName(e.target.value)}
+                                            />
                                         </div>
                                         <div className="space-y-2">
                                             <Label htmlFor="last-name">Last name</Label>
-                                            <Input id="last-name" placeholder="Doe" required className="h-10" />
+                                            <Input
+                                                id="last-name"
+                                                placeholder="Doe"
+                                                required
+                                                className="h-10"
+                                                value={lastName}
+                                                onChange={(e) => setLastName(e.target.value)}
+                                            />
                                         </div>
                                     </div>
                                     <div className="space-y-2">
@@ -80,6 +124,8 @@ export function SignUp({ onSignup, onNavigateToLogin }: SignUpProps) {
                                             placeholder="name@example.com"
                                             required
                                             className="h-10"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -89,6 +135,8 @@ export function SignUp({ onSignup, onNavigateToLogin }: SignUpProps) {
                                             type="password"
                                             required
                                             className="h-10"
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
                                         />
                                     </div>
                                     <Button type="submit" className="w-full h-10" disabled={isLoading}>
@@ -108,11 +156,25 @@ export function SignUp({ onSignup, onNavigateToLogin }: SignUpProps) {
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <Label htmlFor="staff-first-name">First name</Label>
-                                            <Input id="staff-first-name" placeholder="Jane" required className="h-10" />
+                                            <Input
+                                                id="staff-first-name"
+                                                placeholder="Jane"
+                                                required
+                                                className="h-10"
+                                                value={staffFirstName}
+                                                onChange={(e) => setStaffFirstName(e.target.value)}
+                                            />
                                         </div>
                                         <div className="space-y-2">
                                             <Label htmlFor="staff-last-name">Last name</Label>
-                                            <Input id="staff-last-name" placeholder="Smith" required className="h-10" />
+                                            <Input
+                                                id="staff-last-name"
+                                                placeholder="Smith"
+                                                required
+                                                className="h-10"
+                                                value={staffLastName}
+                                                onChange={(e) => setStaffLastName(e.target.value)}
+                                            />
                                         </div>
                                     </div>
                                     <div className="space-y-2">
@@ -122,6 +184,8 @@ export function SignUp({ onSignup, onNavigateToLogin }: SignUpProps) {
                                             placeholder="STF-2025-001"
                                             required
                                             className="h-10"
+                                            value={staffId}
+                                            onChange={(e) => setStaffId(e.target.value)}
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -130,7 +194,10 @@ export function SignUp({ onSignup, onNavigateToLogin }: SignUpProps) {
                                             id="department"
                                             placeholder="Public Works"
                                             required
+
                                             className="h-10"
+                                            value={department}
+                                            onChange={(e) => setDepartment(e.target.value)}
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -140,6 +207,8 @@ export function SignUp({ onSignup, onNavigateToLogin }: SignUpProps) {
                                             type="password"
                                             required
                                             className="h-10"
+                                            value={staffPassword}
+                                            onChange={(e) => setStaffPassword(e.target.value)}
                                         />
                                     </div>
                                     <Button type="submit" className="w-full h-10" disabled={isLoading}>
