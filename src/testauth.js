@@ -47,7 +47,7 @@ async function testLogin(email, password) {
 
   const token = Buffer.from(`${email}:${password}`).toString("base64");
 
-  const resp = await fetch(`${BASE_URL}/api/auth/me`, {
+  const resp = await fetch(`${BASE_URL}/api/issues/1`, {
     method: "GET",
     headers: {
       Authorization: `Basic ${token}`,

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Header } from "./Header";
 import { Card, CardContent } from "./ui/card";
 import { Badge } from "./ui/badge";
@@ -82,8 +82,10 @@ export function IssueDetailPage({
       try {
         setLoading(true);
         const data = await api.getIssueById(issueId);
+        console.log("Fetched issue data:", data);
         setIssue(data);
-        setUpvotes(data.upvotes || 0);
+        setUpvotes(data.votes || 0);
+        setHasUpvoted(!!data.isVotedByUser);
       } catch (err) {
         console.error("Failed to fetch issue:", err);
         setError("Failed to load issue details.");
@@ -118,29 +120,36 @@ export function IssueDetailPage({
     }
   }, [issueId]);
 
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
-  }
-
-  if (error || !issue) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
-        <p className="text-red-500">{error || "Issue not found"}</p>
-        <Button onClick={() => onNavigate("issues")}>Back to Issues</Button>
-      </div>
-    );
-  }
+  const upvoteTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleUpvote = () => {
-    if (hasUpvoted) {
-      setUpvotes(upvotes - 1);
-      setHasUpvoted(false);
-      toast.success("Upvote removed");
-    } else {
-      setUpvotes(upvotes + 1);
-      setHasUpvoted(true);
-      toast.success("Issue upvoted");
+    const newHasUpvoted = !hasUpvoted;
+    const newUpvotes = newHasUpvoted ? upvotes + 1 : upvotes - 1;
+
+    // Optimistic update
+    setHasUpvoted(newHasUpvoted);
+    setUpvotes(newUpvotes);
+
+    // Debounce logic
+    if (upvoteTimeoutRef.current) {
+      clearTimeout(upvoteTimeoutRef.current);
     }
+
+    upvoteTimeoutRef.current = setTimeout(async () => {
+      try {
+        if (newHasUpvoted) {
+          await api.upvoteIssue(issueId);
+        } else {
+          await api.removeUpvote(issueId);
+        }
+      } catch (err) {
+        console.error("Failed to sync upvote:", err);
+        toast.error("Failed to save upvote");
+        // Revert UI on error
+        setHasUpvoted(!newHasUpvoted);
+        setUpvotes(upvotes);
+      }
+    }, 2000); // 2 seconds delay
   };
 
   const handleAddComment = async () => {
@@ -163,6 +172,19 @@ export function IssueDetailPage({
       toast.error("Failed to add comment");
     }
   };
+
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
+
+  if (error || !issue) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
+        <p className="text-red-500">{error || "Issue not found"}</p>
+        <Button onClick={() => onNavigate("issues")}>Back to Issues</Button>
+      </div>
+    );
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {

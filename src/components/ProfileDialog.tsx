@@ -23,6 +23,9 @@ import {
   Shield,
   LogOut,
 } from "lucide-react";
+import { api } from "../services/api";
+import { User as UserType } from "../lib/types";
+import { useState, useEffect } from "react";
 
 interface ProfileDialogProps {
   open: boolean;
@@ -37,19 +40,31 @@ export function ProfileDialog({
   userRole,
   onLogout,
 }: ProfileDialogProps) {
-  const isStaff = userRole === "staff";
+  const [user, setUser] = useState<UserType | null>(null);
 
-  // Mock user data
-  const userData = {
-    name: isStaff ? "Jane Smith" : "John Doe",
-    email: isStaff ? "jane.smith@citytracker.gov" : "john.doe@email.com",
-    location: "Downtown District",
-    joinDate: "January 2024",
-    issuesReported: isStaff ? 0 : 12,
-    upvotesGiven: isStaff ? 0 : 47,
-    issuesResolved: isStaff ? 156 : 0,
-    issuesAssigned: isStaff ? 23 : 0,
+  useEffect(() => {
+    if (open) {
+      const fetchUser = async () => {
+        try {
+          const userData = await api.getCurrentUser();
+          setUser(userData);
+        } catch (err) {
+          console.error("Failed to fetch user profile:", err);
+        }
+      };
+      fetchUser();
+    }
+  }, [open]);
+
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return "Unknown";
+    return new Date(dateStr).toLocaleDateString("en-US", {
+      month: "long",
+      year: "numeric",
+    });
   };
+
+  const isStaff = user?.role === "STAFF" || userRole === "staff";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -66,14 +81,16 @@ export function ProfileDialog({
           <div className="flex items-center gap-4">
             <Avatar className="h-16 w-16">
               <AvatarFallback className="text-lg">
-                {userData.name
-                  .split(" ")
-                  .map((n) => n[0])
-                  .join("")}
+                {user?.fullName
+                  ? user.fullName
+                    .split(" ")
+                    .map((n: string) => n[0])
+                    .join("")
+                  : "U"}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 space-y-1">
-              <h3>{userData.name}</h3>
+              <h3>{user?.fullName || "Loading..."}</h3>
               <Badge variant={isStaff ? "default" : "secondary"}>
                 {isStaff ? "Staff Member" : "Citizen"}
               </Badge>
@@ -88,15 +105,15 @@ export function ProfileDialog({
             <div className="space-y-2 text-muted-foreground">
               <div className="flex items-center gap-2">
                 <Mail className="h-4 w-4" />
-                <span>{userData.email}</span>
+                <span>{user?.email || "Loading..."}</span>
               </div>
               <div className="flex items-center gap-2">
                 <MapPin className="h-4 w-4" />
-                <span>{userData.location}</span>
+                <span>Downtown District</span>
               </div>
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
-                <span>Joined {userData.joinDate}</span>
+                <span>Joined {formatDate(user?.createdAt)}</span>
               </div>
             </div>
           </div>
@@ -114,14 +131,14 @@ export function ProfileDialog({
                       <FileText className="h-4 w-4" />
                       <span>Issues Reported</span>
                     </div>
-                    <p>{userData.issuesReported}</p>
+                    <p>12</p>
                   </div>
                   <div className="space-y-1">
                     <div className="flex items-center gap-1.5 text-muted-foreground">
                       <ArrowBigUp className="h-4 w-4" />
                       <span>Upvotes Given</span>
                     </div>
-                    <p>{userData.upvotesGiven}</p>
+                    <p>47</p>
                   </div>
                 </>
               ) : (
@@ -131,14 +148,14 @@ export function ProfileDialog({
                       <CheckCircle className="h-4 w-4" />
                       <span>Resolved</span>
                     </div>
-                    <p>{userData.issuesResolved}</p>
+                    <p>156</p>
                   </div>
                   <div className="space-y-1">
                     <div className="flex items-center gap-1.5 text-muted-foreground">
                       <User className="h-4 w-4" />
                       <span>Assigned to Me</span>
                     </div>
-                    <p>{userData.issuesAssigned}</p>
+                    <p>23</p>
                   </div>
                 </>
               )}

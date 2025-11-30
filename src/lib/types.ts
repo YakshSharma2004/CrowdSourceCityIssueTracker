@@ -9,7 +9,8 @@ export interface Issue {
     reporterId: number;
     reporterName: string;
     description?: string; // Optional as it wasn't in the list response, but likely needed
-    upvotes?: number; // Optional, might be added later
+    votes?: number; // Optional, might be added later
+    isVotedByUser?: boolean;
 }
 
 export interface Comment {
@@ -27,6 +28,7 @@ export interface User {
     email: string;
     fullName: string;
     role: "CITIZEN" | "STAFF";
+    createdAt?: string;
 }
 
 export interface PageableResponse<T> {

@@ -106,7 +106,7 @@ export const api = {
     },
 
     getIssueById: async (id: string): Promise<Issue> => {
-        const response = await fetch(`${BASE_URL}/api/issues/${id}`, {
+        const response = await fetch(`${BASE_URL}/api/issues/${id}?userId=${localStorage.getItem("userId")}`, {
             headers: getAuthHeader(),
         });
 
@@ -154,6 +154,36 @@ export const api = {
             if (response.status === 401) throw new Error("Unauthorized");
             throw new Error("Failed to fetch current user");
         }
-        return response.json();
+        const user = await response.json();
+        localStorage.setItem("userId", user.id.toString());
+        return user;
+    },
+
+    upvoteIssue: async (issueId: string): Promise<void> => {
+        const response = await fetch(`${BASE_URL}/api/issues/${issueId}/votes`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                ...getAuthHeader(),
+            },
+            body: JSON.stringify({ voterId: localStorage.getItem("userId") }),
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) throw new Error("Unauthorized");
+            throw new Error("Failed to upvote issue");
+        }
+    },
+
+    removeUpvote: async (issueId: string): Promise<void> => {
+        const response = await fetch(`${BASE_URL}/api/issues/${issueId}/votes?voterId=${localStorage.getItem("userId")}`, {
+            method: "DELETE",
+            headers: getAuthHeader(),
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) throw new Error("Unauthorized");
+            throw new Error("Failed to remove upvote");
+        }
     },
 };
