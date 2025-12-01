@@ -9,6 +9,7 @@ import { Toaster } from "./components/ui/sonner";
 import { SmoothCursor } from "@/components/ui/smooth-cursor";
 import { ThemeProvider } from "./components/ThemeContext";
 import { api } from "./services/api";
+import { MapPage } from "./components/MapPage";
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -36,10 +37,11 @@ export default function App() {
   const handleLogout = () => {
     console.log("[App] handleLogout called");
     api.logout();
-    setIsLoggedIn(false);
-    setCurrentPage("issues");
-    setSelectedIssueId(null);
-    setAuthMode("login");
+    // Force a reload to ensure all states (Maps, Cursor, etc.) are cleaned up properly
+    // Small timeout to ensure localStorage.clear() has processed
+    setTimeout(() => {
+      window.location.reload();
+    }, 100);
   };
 
   const handleNavigate = (page: string, issueId?: string) => {
@@ -78,7 +80,7 @@ export default function App() {
           />
         )}
         {currentPage === "map" && (
-          <MainPage userRole={userRole} onLogout={handleLogout} onNavigate={handleNavigate} />
+          <MapPage userRole={userRole} onLogout={handleLogout} onNavigate={handleNavigate} />
         )}
         {currentPage === "analytics" && (
           <AnalyticsPage

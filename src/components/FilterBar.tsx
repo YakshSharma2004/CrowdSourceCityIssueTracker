@@ -53,7 +53,7 @@ export function FilterBar({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Categories</SelectItem>
-              <SelectItem value="roads">Roads</SelectItem>
+              <SelectItem value="road">Roads</SelectItem>
               <SelectItem value="lighting">Lighting</SelectItem>
               <SelectItem value="sanitation">Sanitation</SelectItem>
               <SelectItem value="parks">Parks</SelectItem>

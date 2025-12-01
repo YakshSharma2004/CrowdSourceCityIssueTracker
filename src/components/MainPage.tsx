@@ -5,6 +5,7 @@ import { IssueCard } from "./IssueCard";
 import { Issue } from "../lib/types";
 import { api } from "../services/api";
 import { motion, AnimatePresence } from "framer-motion";
+import { AssignIssueDialog } from "./AssignIssueDialog";
 
 
 interface MainPageProps {
@@ -14,6 +15,9 @@ interface MainPageProps {
 }
 
 export function MainPage({ userRole, onLogout, onNavigate }: MainPageProps) {
+  const [assignIssue, setAssignIssue] = useState<Issue | null>(null);
+  const [showAssignDialog, setShowAssignDialog] = useState(false);
+
   const [issues, setIssues] = useState<Issue[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +58,11 @@ export function MainPage({ userRole, onLogout, onNavigate }: MainPageProps) {
   };
 
   const handleAssign = (issueId: string) => {
-    onNavigate("issue-detail", issueId);
+    const issue = issues.find((i) => i.id.toString() === issueId);
+    if (issue) {
+      setAssignIssue(issue);
+      setShowAssignDialog(true);
+    }
   };
 
   const filteredIssues = useMemo(() => {
@@ -72,17 +80,17 @@ export function MainPage({ userRole, onLogout, onNavigate }: MainPageProps) {
 
     // Filter by category
     if (category !== "all") {
-      filtered = filtered.filter((issue) => issue.category === category);
+      filtered = filtered.filter((issue) => issue.category?.toLowerCase() === category.toLowerCase());
     }
 
     // Filter by status
     if (status !== "all") {
-      filtered = filtered.filter((issue) => issue.status === status); // Note: status case sensitivity might need check
+      filtered = filtered.filter((issue) => issue.status?.toLowerCase() === status.toLowerCase());
     }
 
     // Filter by severity
     if (severity !== "all") {
-      filtered = filtered.filter((issue) => issue.severity === severity);
+      filtered = filtered.filter((issue) => issue.severity?.toLowerCase() === severity.toLowerCase());
     }
 
     // Sort
@@ -92,7 +100,7 @@ export function MainPage({ userRole, onLogout, onNavigate }: MainPageProps) {
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
     } else if (sortBy === "upvotes") {
-      filtered.sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0));
+      filtered.sort((a, b) => (b.votes || 0) - (a.votes || 0));
     } else if (sortBy === "severity") {
       const severityOrder = { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1 };
       // @ts-ignore - handling potential case mismatch or missing keys safely
@@ -196,6 +204,15 @@ export function MainPage({ userRole, onLogout, onNavigate }: MainPageProps) {
           </p>
         </div>
       </footer>
-    </div >
+
+      {assignIssue && (
+        <AssignIssueDialog
+          open={showAssignDialog}
+          onOpenChange={setShowAssignDialog}
+          issueId={assignIssue.id.toString()}
+          issueTitle={assignIssue.title}
+        />
+      )}
+    </div>
   );
 }

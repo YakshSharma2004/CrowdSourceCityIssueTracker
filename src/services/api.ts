@@ -1,4 +1,4 @@
-import { PageableResponse, Issue, Comment, User } from "../lib/types";
+import { PageableResponse, Issue, Comment, User, newIssue, Department } from "../lib/types";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
@@ -44,8 +44,18 @@ export const api = {
         // Store token (and optionally email/role) for later requests
         localStorage.setItem("authToken", token);
         localStorage.setItem("userEmail", email);
-        // still mocking role until backend returns it
-        localStorage.setItem("userRole", "staff");
+
+        // Fetch current user to get the actual role
+        try {
+            const user = await api.getCurrentUser();
+            const role = user.role.toLowerCase(); // "CITIZEN" -> "citizen"
+            localStorage.setItem("userRole", role);
+            console.log(`[api.login] Stored user role: ${role}`);
+        } catch (err) {
+            console.error("[api.login] Failed to fetch user role, defaulting to citizen", err);
+            localStorage.setItem("userRole", "citizen");
+        }
+
         console.log("Login successful");
     },
 
@@ -53,15 +63,18 @@ export const api = {
     signup: async (
         email: string,
         password: string,
-        fullName: string
+        fullName: string,
+        requestedRole: "CITIZEN" | "STAFF" = "CITIZEN"
     ): Promise<void> => {
         const body = {
             email,
             fullName,
             password,
-            requestedRole: "CITIZEN",
+            requestedRole,
             reason: null,
         };
+
+        console.log("[api.signup] Request body:", body);
 
         const response = await fetch(`${BASE_URL}/api/auth/signup`, {
             method: "POST",
@@ -72,19 +85,21 @@ export const api = {
             body: JSON.stringify(body),
         });
 
+        console.log(`[api.signup] Response status: ${response.status}`);
+
         if (!response.ok && response.status !== 201) {
             throw new Error("Signup failed");
         }
 
-        // optional auto-login right after signup:
-        console.log("Auto-login after signup");
-        await api.login(email, password);
+        // Only auto-login if it's a citizen signup
+        if (requestedRole === "CITIZEN") {
+            console.log("Auto-login after signup");
+            await api.login(email, password);
+        }
     },
 
     logout: () => {
-        localStorage.removeItem("authToken");
-        localStorage.removeItem("userRole");
-        localStorage.removeItem("userEmail");
+        localStorage.clear();
     },
 
     getIssues: async (
@@ -155,6 +170,7 @@ export const api = {
             throw new Error("Failed to fetch current user");
         }
         const user = await response.json();
+        console.log("[api.getCurrentUser] Response:", user);
         localStorage.setItem("userId", user.id.toString());
         return user;
     },
@@ -184,6 +200,68 @@ export const api = {
         if (!response.ok) {
             if (response.status === 401) throw new Error("Unauthorized");
             throw new Error("Failed to remove upvote");
+        }
+    },
+    addIssue: async (issue: newIssue): Promise<Issue> => {
+        const response = await fetch(`${BASE_URL}/api/issues`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                ...getAuthHeader(),
+            },
+            body: JSON.stringify(issue),
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) throw new Error("Unauthorized");
+            throw new Error("Failed to add issue");
+        }
+        return response.json();
+    },
+
+    getDepartments: async (): Promise<Department[]> => {
+        const response = await fetch(`${BASE_URL}/api/departments`, {
+            headers: getAuthHeader(),
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) throw new Error("Unauthorized");
+            throw new Error("Failed to fetch departments");
+        }
+        return response.json();
+    },
+
+    getStaffUsers: async (): Promise<User[]> => {
+        const response = await fetch(`${BASE_URL}/api/auth/staff`, {
+            headers: getAuthHeader(),
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) throw new Error("Unauthorized");
+            throw new Error("Failed to fetch staff users");
+        }
+        return response.json();
+    },
+
+    assignIssue: async (issueId: string, assigneeId: number): Promise<void> => {
+        const url = `${BASE_URL}/api/issues/${issueId}/assignments`;
+        const body = { userId: assigneeId };
+        console.log(`[api.assignIssue] Sending POST to ${url} with body:`, body);
+
+        const response = await fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                ...getAuthHeader(),
+            },
+            body: JSON.stringify(body),
+        });
+
+        console.log(`[api.assignIssue] Response status: ${response.status}`);
+
+        if (!response.ok) {
+            if (response.status === 401) throw new Error("Unauthorized");
+            throw new Error("Failed to assign issue");
         }
     },
 };

@@ -24,10 +24,10 @@ export function SignUp({ onSignup, onNavigateToLogin }: SignUpProps) {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
 
-    // Staff Form State (Mock for now as backend only supports citizen signup via script logic)
+    // Staff Form State
     const [staffFirstName, setStaffFirstName] = useState("");
     const [staffLastName, setStaffLastName] = useState("");
-    const [staffId, setStaffId] = useState("");
+    const [staffEmail, setStaffEmail] = useState("");
     const [department, setDepartment] = useState("");
     const [staffPassword, setStaffPassword] = useState("");
 
@@ -38,13 +38,18 @@ export function SignUp({ onSignup, onNavigateToLogin }: SignUpProps) {
                 const fullName = `${firstName} ${lastName}`.trim();
                 // Add artificial delay as requested
                 await new Promise((resolve) => setTimeout(resolve, 3000));
-                await api.signup(email, password, fullName);
+                await api.signup(email, password, fullName, "CITIZEN");
                 toast.success("Account created successfully! Logging you in...");
                 onSignup("citizen");
             } else {
-                // Staff signup logic (if different)
-                // For now, we'll assume same endpoint or show not implemented
-                toast.error("Staff signup is not yet supported via the public interface.");
+                const fullName = `${staffFirstName} ${staffLastName}`.trim();
+                await api.signup(staffEmail, staffPassword, fullName, "STAFF");
+                toast.success("Signup request sent to admin for approval.");
+
+                // Redirect to login after delay
+                setTimeout(() => {
+                    onNavigateToLogin();
+                }, 2000);
             }
         } catch (error) {
             console.error(error);
@@ -178,23 +183,22 @@ export function SignUp({ onSignup, onNavigateToLogin }: SignUpProps) {
                                         </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="staff-id">Staff ID</Label>
+                                        <Label htmlFor="staff-email">Email</Label>
                                         <Input
-                                            id="staff-id"
-                                            placeholder="STF-2025-001"
+                                            id="staff-email"
+                                            type="email"
+                                            placeholder="staff@city.gov"
                                             required
                                             className="h-10"
-                                            value={staffId}
-                                            onChange={(e) => setStaffId(e.target.value)}
+                                            value={staffEmail}
+                                            onChange={(e) => setStaffEmail(e.target.value)}
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="department">Department</Label>
+                                        <Label htmlFor="department">Department (Optional)</Label>
                                         <Input
                                             id="department"
                                             placeholder="Public Works"
-                                            required
-
                                             className="h-10"
                                             value={department}
                                             onChange={(e) => setDepartment(e.target.value)}
@@ -212,7 +216,7 @@ export function SignUp({ onSignup, onNavigateToLogin }: SignUpProps) {
                                         />
                                     </div>
                                     <Button type="submit" className="w-full h-10" disabled={isLoading}>
-                                        {isLoading ? "Creating account..." : "Create Account"}
+                                        {isLoading ? "Sending Request..." : "Request Staff Account"}
                                     </Button>
                                 </form>
                             </TabsContent>

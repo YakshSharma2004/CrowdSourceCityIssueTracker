@@ -14,7 +14,11 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { MapPin, Upload, Camera, Navigation } from "lucide-react";
 import { toast } from "sonner";
-import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, Marker, Autocomplete } from '@react-google-maps/api';
+import { api } from "../services/api";
+import { newIssue } from "../lib/types";
+
+const libraries: ("places")[] = ["places"];
 
 interface ReportIssuePageProps {
   userRole: "citizen" | "staff";
@@ -31,10 +35,12 @@ export function ReportIssuePage({ userRole, onLogout, onNavigate }: ReportIssueP
   const [longitude, setLongitude] = useState("");
   const [photos, setPhotos] = useState<File[]>([]);
   const [mapPosition, setMapPosition] = useState({ lat: 40.7128, lng: -74.0060 });
+  const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
 
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
-    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ""
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
+    libraries
   });
 
 
@@ -84,7 +90,34 @@ export function ReportIssuePage({ userRole, onLogout, onNavigate }: ReportIssueP
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const onAutocompleteLoad = (autocompleteInstance: google.maps.places.Autocomplete) => {
+    setAutocomplete(autocompleteInstance);
+  };
+
+  const onPlaceChanged = () => {
+    if (autocomplete) {
+      const place = autocomplete.getPlace();
+      if (place.geometry && place.geometry.location) {
+        const lat = place.geometry.location.lat();
+        const lng = place.geometry.location.lng();
+
+        setLatitude(lat.toFixed(6));
+        setLongitude(lng.toFixed(6));
+        setMapPosition({ lat, lng });
+
+        // Optional: Use formatted address if available
+        // if (place.formatted_address) {
+        //   // You might want to store this in a separate state or append to description
+        // }
+
+        toast.success("Location updated from search");
+      } else {
+        toast.error("No details available for input: '" + place.name + "'");
+      }
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!title || !description || !category || !severity || !latitude || !longitude) {
@@ -92,22 +125,42 @@ export function ReportIssuePage({ userRole, onLogout, onNavigate }: ReportIssueP
       return;
     }
 
-    // Mock submission
-    toast.success("Issue reported successfully!");
+    const userId = localStorage.getItem("userId");
+    if (!userId) {
+      toast.error("You must be logged in to report an issue");
+      return;
+    }
 
-    // Reset form
-    setTitle("");
-    setDescription("");
-    setCategory("");
-    setSeverity("");
-    setLatitude("");
-    setLongitude("");
-    setPhotos([]);
+    try {
+      const issueData: newIssue = {
+        reporterId: parseInt(userId),
+        title,
+        description,
+        category: category.toUpperCase(),
+        severity: severity.toUpperCase() as "LOW" | "MEDIUM" | "HIGH",
+        address: `${latitude}, ${longitude}`,
+      };
 
-    // Navigate back to issues page
-    setTimeout(() => {
-      onNavigate("issues");
-    }, 1500);
+      await api.addIssue(issueData);
+      toast.success("Issue reported successfully!");
+
+      // Reset form
+      setTitle("");
+      setDescription("");
+      setCategory("");
+      setSeverity("");
+      setLatitude("");
+      setLongitude("");
+      setPhotos([]);
+
+      // Navigate back to issues page
+      setTimeout(() => {
+        onNavigate("issues");
+      }, 1500);
+    } catch (error) {
+      console.error("Failed to report issue:", error);
+      toast.error("Failed to report issue. Please try again.");
+    }
   };
 
   const handleCancel = () => {
@@ -168,7 +221,7 @@ export function ReportIssuePage({ userRole, onLogout, onNavigate }: ReportIssueP
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="roads">Roads</SelectItem>
+                      <SelectItem value="road">Roads</SelectItem>
                       <SelectItem value="lighting">Lighting</SelectItem>
                       <SelectItem value="sanitation">Sanitation</SelectItem>
                       <SelectItem value="parks">Parks</SelectItem>
@@ -190,7 +243,6 @@ export function ReportIssuePage({ userRole, onLogout, onNavigate }: ReportIssueP
                       <SelectItem value="low">Low</SelectItem>
                       <SelectItem value="medium">Medium</SelectItem>
                       <SelectItem value="high">High</SelectItem>
-                      <SelectItem value="critical">Critical</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -251,8 +303,23 @@ export function ReportIssuePage({ userRole, onLogout, onNavigate }: ReportIssueP
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <MapPin className="h-4 w-4" />
-                    <span>Click on the map to set location</span>
+                    <span>Search address or click on map</span>
                   </div>
+
+                  {isLoaded && (
+                    <div className="relative z-10">
+                      <Autocomplete
+                        onLoad={onAutocompleteLoad}
+                        onPlaceChanged={onPlaceChanged}
+                      >
+                        <Input
+                          type="text"
+                          placeholder="Search for an address..."
+                          className="w-full mb-2"
+                        />
+                      </Autocomplete>
+                    </div>
+                  )}
                   <div className="relative w-full h-64 rounded-lg border-2 border-border overflow-hidden">
                     {isLoaded ? (
                       <GoogleMap

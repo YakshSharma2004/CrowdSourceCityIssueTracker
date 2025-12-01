@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { api } from "../services/api";
+import { Department, User } from "../lib/types";
 import {
   Dialog,
   DialogContent,
@@ -35,23 +37,54 @@ export function AssignIssueDialog({
   const [department, setDepartment] = useState("");
   const [assignedStaff, setAssignedStaff] = useState("");
   const [notes, setNotes] = useState("");
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [staffUsers, setStaffUsers] = useState<User[]>([]);
 
-  const handleAssign = () => {
+  useEffect(() => {
+    if (open) {
+      const fetchData = async () => {
+        try {
+          const [deptData, staffData] = await Promise.all([
+            api.getDepartments(),
+            api.getStaffUsers(),
+          ]);
+          setDepartments(deptData);
+          setStaffUsers(staffData);
+        } catch (err) {
+          console.error("Failed to fetch data:", err);
+          toast.error("Failed to load assignment data");
+        }
+      };
+      fetchData();
+    }
+  }, [open]);
+
+  const handleAssign = async () => {
     if (!department) {
       toast.error("Please select a department");
       return;
     }
 
-    // Mock assignment
-    toast.success(
-      `Issue assigned to ${department}${assignedStaff ? ` - ${assignedStaff}` : ""}`
-    );
+    try {
+      // If a staff member is selected, assign to them
+      if (assignedStaff) {
+        await api.assignIssue(issueId, parseInt(assignedStaff));
+        const staffName = staffUsers.find(u => u.id.toString() === assignedStaff)?.fullName;
+        toast.success(`Issue assigned to ${staffName} (${department})`);
+      } else {
+        // Just department assignment (mock for now as API might require user)
+        toast.success(`Issue assigned to ${department}`);
+      }
 
-    // Reset and close
-    setDepartment("");
-    setAssignedStaff("");
-    setNotes("");
-    onOpenChange(false);
+      // Reset and close
+      setDepartment("");
+      setAssignedStaff("");
+      setNotes("");
+      onOpenChange(false);
+    } catch (err) {
+      console.error("Failed to assign issue:", err);
+      toast.error("Failed to assign issue");
+    }
   };
 
   return (
@@ -74,12 +107,11 @@ export function AssignIssueDialog({
                 <SelectValue placeholder="Select department" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="public-works">Public Works</SelectItem>
-                <SelectItem value="transportation">Transportation</SelectItem>
-                <SelectItem value="sanitation">Sanitation</SelectItem>
-                <SelectItem value="parks-recreation">Parks & Recreation</SelectItem>
-                <SelectItem value="water-utilities">Water Utilities</SelectItem>
-                <SelectItem value="electrical">Electrical Department</SelectItem>
+                {departments.map((dept) => (
+                  <SelectItem key={dept.id} value={dept.name}>
+                    {dept.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -91,11 +123,11 @@ export function AssignIssueDialog({
                 <SelectValue placeholder="Select staff member" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="john-doe">John Doe</SelectItem>
-                <SelectItem value="jane-smith">Jane Smith</SelectItem>
-                <SelectItem value="mike-johnson">Mike Johnson</SelectItem>
-                <SelectItem value="sarah-williams">Sarah Williams</SelectItem>
-                <SelectItem value="david-brown">David Brown</SelectItem>
+                {staffUsers.map((user) => (
+                  <SelectItem key={user.id} value={user.id.toString()}>
+                    {user.fullName}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
