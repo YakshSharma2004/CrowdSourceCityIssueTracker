@@ -21,9 +21,6 @@ The frontend talks to the Spring Boot backend (`cityissuetrackerserver`) over RE
 
 ## Project Structure
 
-> Folder names assume the standard `src/` structure:
-> `src/` is aliased as `@` in imports (e.g. `@/components/...`).
-
 ```txt
 cityissuetracker/
 ├── public/                  # Static assets (favicon, index.html mount point, etc.)
@@ -70,3 +67,29 @@ cityissuetracker/
 ├── tsconfig.json
 ├── vite.config.ts
 └── tailwind.config.(ts|js)
+
+---
+
+## Setup & Running
+
+1.  **Install Dependencies**
+    ```bash
+    npm install
+    ```
+
+2.  **Environment Setup**
+    Create a `.env` file in the root directory (if it doesn't exist) and configure your backend URL:
+    ```env
+    VITE_API_URL=http://localhost:8080
+    ```
+
+3.  **Run Development Server**
+    ```bash
+    npm run dev
+    ```
+    The app will be available at `http://localhost:5173` (or the port shown in the terminal).
+
+4.  **Build for Production**
+    ```bash
+    npm run build
+    ```
