@@ -1,9 +1,7 @@
-import { MapPin, ArrowBigUp, User } from "lucide-react";
+import { MapPin, User } from "lucide-react";
 import { Card, CardContent } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { useState } from "react";
-
 import { Issue } from "../lib/types";
 
 interface IssueCardProps {
@@ -14,18 +12,6 @@ interface IssueCardProps {
 }
 
 export function IssueCard({ issue, isStaff, onViewDetails, onAssign }: IssueCardProps) {
-  const [upvotes, setUpvotes] = useState(issue.upvotes || 0);
-  const [hasUpvoted, setHasUpvoted] = useState(false);
-
-  const handleUpvote = () => {
-    if (hasUpvoted) {
-      setUpvotes(upvotes - 1);
-      setHasUpvoted(false);
-    } else {
-      setUpvotes(upvotes + 1);
-      setHasUpvoted(true);
-    }
-  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -69,13 +55,13 @@ export function IssueCard({ issue, isStaff, onViewDetails, onAssign }: IssueCard
   };
 
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => onViewDetails(issue.id.toString())}>
       <CardContent className="p-6">
         <div className="space-y-4">
           {/* Header row */}
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
-              <h3 className="mb-2">{issue.title}</h3>
+              <h3 className="mb-2 font-semibold text-lg">{issue.title}</h3>
               <div className="flex flex-wrap gap-2">
                 <Badge className={getStatusColor(issue.status)}>
                   {issue.status === "IN_PROGRESS" ? "In Progress" : issue.status}
@@ -86,28 +72,17 @@ export function IssueCard({ issue, isStaff, onViewDetails, onAssign }: IssueCard
                 <Badge variant="outline">{issue.category}</Badge>
               </div>
             </div>
-
-            <button
-              onClick={handleUpvote}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-md transition-colors ${hasUpvoted
-                ? "bg-primary text-primary-foreground"
-                : "bg-secondary hover:bg-secondary/80"
-                }`}
-            >
-              <ArrowBigUp className={`h-4 w-4 ${hasUpvoted ? "fill-current" : ""}`} />
-              <span>{upvotes}</span>
-            </button>
           </div>
 
           {/* Description */}
-          <p className="text-muted-foreground">{issue.description}</p>
+          <p className="text-muted-foreground line-clamp-2">{issue.description}</p>
 
           {/* Footer */}
           <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-            <div className="flex flex-col gap-2 text-muted-foreground">
+            <div className="flex flex-col gap-2 text-muted-foreground text-sm">
               <div className="flex items-center gap-1.5">
                 <MapPin className="h-4 w-4" />
-                <span>{issue.address}</span>
+                <span className="truncate max-w-[200px]">{issue.address}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <User className="h-4 w-4" />
@@ -118,11 +93,8 @@ export function IssueCard({ issue, isStaff, onViewDetails, onAssign }: IssueCard
             </div>
 
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => onViewDetails(issue.id.toString())}>
-                View Details
-              </Button>
               {isStaff && onAssign && (
-                <Button size="sm" onClick={() => onAssign(issue.id.toString())}>
+                <Button size="sm" onClick={(e) => { e.stopPropagation(); onAssign(issue.id.toString()); }}>
                   Assign
                 </Button>
               )}

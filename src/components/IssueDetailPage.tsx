@@ -17,13 +17,11 @@ import {
   Image as ImageIcon,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Issue, Comment } from "../lib/types";
+import { Issue, Comment, Assignment } from "../lib/types";
 import { api } from "../services/api";
 
-
-
 interface IssueDetailPageProps {
-  userRole: "citizen" | "staff";
+  userRole: "citizen" | "staff" | "admin";
   onLogout: () => void;
   onNavigate: (page: string, issueId?: string) => void;
   issueId: string;
@@ -73,6 +71,7 @@ export function IssueDetailPage({
   const [upvotes, setUpvotes] = useState(0);
   const [hasUpvoted, setHasUpvoted] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [newComment, setNewComment] = useState("");
   const [showAssignDialog, setShowAssignDialog] = useState(false);
@@ -81,26 +80,24 @@ export function IssueDetailPage({
     const fetchIssue = async () => {
       try {
         setLoading(true);
-        const data = await api.getIssueById(issueId);
-        console.log("Fetched issue data:", data);
-        setIssue(data);
-        setUpvotes(data.votes || 0);
-        setHasUpvoted(!!data.isVotedByUser);
+        const [issueData, commentsData, assignmentsData] = await Promise.all([
+          api.getIssueById(issueId),
+          api.getCommentsByIssueId(issueId),
+          api.getAssignments(issueId),
+        ]);
+
+        console.log("Fetched issue data:", issueData);
+        console.log("Fetched assignments data:", assignmentsData);
+        setIssue(issueData);
+        setUpvotes(issueData.votes || 0);
+        setHasUpvoted(!!issueData.isVotedByUser);
+        setComments(commentsData);
+        setAssignments(assignmentsData);
       } catch (err) {
-        console.error("Failed to fetch issue:", err);
+        console.error("Failed to fetch issue details:", err);
         setError("Failed to load issue details.");
       } finally {
         setLoading(false);
-      }
-    };
-
-    const fetchComments = async () => {
-      try {
-        const data = await api.getCommentsByIssueId(issueId);
-        setComments(data);
-      } catch (err) {
-        console.error("Failed to fetch comments:", err);
-        toast.error("Failed to load comments");
       }
     };
 
@@ -114,13 +111,22 @@ export function IssueDetailPage({
     };
 
     if (issueId) {
-      fetchComments();
       fetchIssue();
       fetchCurrentUser();
     }
   }, [issueId]);
 
   const upvoteTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingActionRef = useRef<(() => Promise<void>) | null>(null);
+
+  // Flush pending upvotes on unmount
+  useEffect(() => {
+    return () => {
+      if (pendingActionRef.current) {
+        pendingActionRef.current();
+      }
+    };
+  }, []);
 
   const handleUpvote = () => {
     const newHasUpvoted = !hasUpvoted;
@@ -135,7 +141,7 @@ export function IssueDetailPage({
       clearTimeout(upvoteTimeoutRef.current);
     }
 
-    upvoteTimeoutRef.current = setTimeout(async () => {
+    const action = async () => {
       try {
         if (newHasUpvoted) {
           await api.upvoteIssue(issueId);
@@ -148,8 +154,13 @@ export function IssueDetailPage({
         // Revert UI on error
         setHasUpvoted(!newHasUpvoted);
         setUpvotes(upvotes);
+      } finally {
+        pendingActionRef.current = null;
       }
-    }, 2000); // 2 seconds delay
+    };
+
+    pendingActionRef.current = action;
+    upvoteTimeoutRef.current = setTimeout(action, 500); // 500ms delay
   };
 
   const handleAddComment = async () => {
@@ -242,8 +253,32 @@ export function IssueDetailPage({
     return `${Math.floor(diffDays / 30)}mo ago`;
   };
 
+  const handleDeleteIssue = async () => {
+    if (!confirm("Are you sure you want to delete this issue? This action cannot be undone.")) return;
+    try {
+      await api.deleteIssue(issueId);
+      toast.success("Issue deleted");
+      onNavigate("issues");
+    } catch (err) {
+      console.error("Failed to delete issue:", err);
+      toast.error("Failed to delete issue");
+    }
+  };
+
+  const handleDeleteComment = async (commentId: number) => {
+    if (!confirm("Are you sure you want to delete this comment?")) return;
+    try {
+      await api.deleteComment(issueId, commentId);
+      setComments(comments.filter((c) => c.id !== commentId));
+      toast.success("Comment deleted");
+    } catch (err) {
+      console.error("Failed to delete comment:", err);
+      toast.error("Failed to delete comment");
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted/40 transition-colors duration-300">
       <Header
         userRole={userRole}
         onLogout={onLogout}
@@ -281,18 +316,25 @@ export function IssueDetailPage({
                   </div>
                 </div>
 
-                <button
-                  onClick={handleUpvote}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${hasUpvoted
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-secondary hover:bg-secondary/80"
-                    }`}
-                >
-                  <ArrowBigUp
-                    className={`h-5 w-5 ${hasUpvoted ? "fill-current" : ""}`}
-                  />
-                  <span>{upvotes}</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  {userRole === "admin" && (
+                    <Button variant="destructive" size="sm" onClick={handleDeleteIssue}>
+                      Delete Issue
+                    </Button>
+                  )}
+                  <button
+                    onClick={handleUpvote}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${hasUpvoted
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-secondary hover:bg-secondary/80"
+                      }`}
+                  >
+                    <ArrowBigUp
+                      className={`h-5 w-5 ${hasUpvoted ? "fill-current" : ""}`}
+                    />
+                    <span>{upvotes}</span>
+                  </button>
+                </div>
               </div>
 
               {/* Metadata */}
@@ -348,6 +390,41 @@ export function IssueDetailPage({
 
             <Separator />
 
+            {/* Assignments Section */}
+            {assignments.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  <h3>Assignments</h3>
+                </div>
+                <div className="space-y-2">
+                  {assignments.map((assignment) => (
+                    <div key={assignment.id} className="p-3 bg-muted rounded-md">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-medium">{assignment.departmentName}</p>
+                          {assignment.staffName && (
+                            <p className="text-sm text-muted-foreground">
+                              Assigned to: {assignment.staffName}
+                            </p>
+                          )}
+                          {assignment.notes && (
+                            <p className="text-sm mt-1 italic">
+                              "{assignment.notes}"
+                            </p>
+                          )}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {formatDate(assignment.assignedAt)}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <Separator />
+              </div>
+            )}
+
             {/* Actions */}
             <div className="flex flex-wrap gap-3">
               {userRole === "staff" && (
@@ -373,21 +450,33 @@ export function IssueDetailPage({
               {/* Comment List */}
               <div className="space-y-4">
                 {comments.map((comment) => (
-                  <div key={comment.id} className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <span className="flex items-center gap-1.5">
-                        <User className="h-4 w-4" />
-                        <span>{comment.authorName}</span>
-                      </span>
-                      {comment.role === "staff" && (
-                        <Badge variant="outline" className="text-xs">
-                          Staff
-                        </Badge>
+                  <div key={comment.id} className="space-y-2 group">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="flex items-center gap-1.5">
+                          <User className="h-4 w-4" />
+                          <span>{comment.authorName}</span>
+                        </span>
+                        {comment.role === "staff" && (
+                          <Badge variant="outline" className="text-xs">
+                            Staff
+                          </Badge>
+                        )}
+                        <span className="text-muted-foreground">•</span>
+                        <span className="text-muted-foreground">
+                          {formatRelativeDate(comment.createdAt)}
+                        </span>
+                      </div>
+                      {userRole === "admin" && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => handleDeleteComment(comment.id)}
+                        >
+                          ×
+                        </Button>
                       )}
-                      <span className="text-muted-foreground">•</span>
-                      <span className="text-muted-foreground">
-                        {formatRelativeDate(comment.createdAt)}
-                      </span>
                     </div>
                     <p className="text-muted-foreground pl-5">{comment.content}</p>
                   </div>
@@ -412,7 +501,7 @@ export function IssueDetailPage({
         </Card>
       </main>
 
-      <footer className="border-t bg-white mt-12">
+      <footer className="border-t bg-background mt-12">
         <div className="container mx-auto px-4 py-6">
           <p className="text-center text-muted-foreground">
             © 2025 City Issue Tracker. All rights reserved.

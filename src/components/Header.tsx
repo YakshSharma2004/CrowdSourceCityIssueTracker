@@ -8,7 +8,7 @@ import { ProfileDialog } from "./ProfileDialog";
 
 
 interface HeaderProps {
-  userRole: "citizen" | "staff";
+  userRole: "citizen" | "staff" | "admin";
   onLogout: () => void;
   onNavigate?: (page: string) => void;
   currentPage?: string;
@@ -80,11 +80,11 @@ export function Header({ userRole, onLogout, onNavigate, currentPage = "issues" 
             >
               <Avatar className="h-8 w-8">
                 <AvatarFallback>
-                  {userRole === "staff" ? "ST" : "CT"}
+                  {userRole === "staff" ? "ST" : userRole === "admin" ? "AD" : "CT"}
                 </AvatarFallback>
               </Avatar>
               <span className="hidden sm:inline">
-                {userRole === "staff" ? "Staff" : "Citizen"}
+                {userRole === "staff" ? "Staff" : userRole === "admin" ? "Admin" : "Citizen"}
               </span>
             </Button>
 

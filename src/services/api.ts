@@ -1,4 +1,4 @@
-import { PageableResponse, Issue, Comment, User, newIssue, Department } from "../lib/types";
+import { PageableResponse, Issue, Comment, User, newIssue, Department, Assignment } from "../lib/types";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
@@ -106,8 +106,9 @@ export const api = {
         page = 0,
         size = 20
     ): Promise<PageableResponse<Issue>> => {
+        const userId = localStorage.getItem("userId");
         const response = await fetch(
-            `${BASE_URL}/api/issues?page=${page}&size=${size}`,
+            `${BASE_URL}/api/issues?page=${page}&size=${size}${userId ? `&userId=${userId}` : ""}`,
             {
                 headers: getAuthHeader(),
             }
@@ -243,9 +244,13 @@ export const api = {
         return response.json();
     },
 
-    assignIssue: async (issueId: string, assigneeId: number): Promise<void> => {
+    assignIssue: async (issueId: string, departmentId: number, staffId: number | null, notes: string): Promise<void> => {
         const url = `${BASE_URL}/api/issues/${issueId}/assignments`;
-        const body = { userId: assigneeId };
+        const body = {
+            departmentId,
+            staffId,
+            notes
+        };
         console.log(`[api.assignIssue] Sending POST to ${url} with body:`, body);
 
         const response = await fetch(url, {
@@ -264,4 +269,41 @@ export const api = {
             throw new Error("Failed to assign issue");
         }
     },
+
+    getAssignments: async (issueId: string): Promise<Assignment[]> => {
+        const response = await fetch(`${BASE_URL}/api/issues/${issueId}/assignments`, {
+            headers: getAuthHeader(),
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) throw new Error("Unauthorized");
+            throw new Error("Failed to fetch assignments");
+        }
+        return response.json();
+    },
+
+    deleteIssue: async (issueId: string): Promise<void> => {
+        const response = await fetch(`${BASE_URL}/api/issues/${issueId}`, {
+            method: "DELETE",
+            headers: getAuthHeader(),
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) throw new Error("Unauthorized");
+            throw new Error("Failed to delete issue");
+        }
+    },
+
+    deleteComment: async (issueId: string, commentId: number): Promise<void> => {
+        const response = await fetch(`${BASE_URL}/api/issues/${issueId}/comments/${commentId}`, {
+            method: "DELETE",
+            headers: getAuthHeader(),
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) throw new Error("Unauthorized");
+            throw new Error("Failed to delete comment");
+        }
+    },
 };
+

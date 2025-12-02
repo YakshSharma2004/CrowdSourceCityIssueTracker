@@ -66,14 +66,18 @@ export function AssignIssueDialog({
     }
 
     try {
-      // If a staff member is selected, assign to them
-      if (assignedStaff) {
-        await api.assignIssue(issueId, parseInt(assignedStaff));
-        const staffName = staffUsers.find(u => u.id.toString() === assignedStaff)?.fullName;
-        toast.success(`Issue assigned to ${staffName} (${department})`);
+      const departmentId = parseInt(department);
+      const staffId = assignedStaff ? parseInt(assignedStaff) : null;
+
+      await api.assignIssue(issueId, departmentId, staffId, notes);
+
+      const deptName = departments.find(d => d.id === departmentId)?.name;
+      const staffName = staffUsers.find(u => u.id === staffId)?.fullName;
+
+      if (staffName) {
+        toast.success(`Issue assigned to ${staffName} (${deptName})`);
       } else {
-        // Just department assignment (mock for now as API might require user)
-        toast.success(`Issue assigned to ${department}`);
+        toast.success(`Issue assigned to ${deptName}`);
       }
 
       // Reset and close
@@ -108,7 +112,7 @@ export function AssignIssueDialog({
               </SelectTrigger>
               <SelectContent>
                 {departments.map((dept) => (
-                  <SelectItem key={dept.id} value={dept.name}>
+                  <SelectItem key={dept.id} value={dept.id.toString()}>
                     {dept.name}
                   </SelectItem>
                 ))}

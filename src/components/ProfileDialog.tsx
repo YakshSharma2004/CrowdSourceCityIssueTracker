@@ -30,7 +30,7 @@ import { useState, useEffect } from "react";
 interface ProfileDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  userRole: "citizen" | "staff";
+  userRole: "citizen" | "staff" | "admin";
   onLogout: () => void;
 }
 
@@ -65,6 +65,7 @@ export function ProfileDialog({
   };
 
   const isStaff = user?.role === "STAFF" || userRole === "staff";
+  const isAdmin = user?.role === "ADMIN" || userRole === "admin";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -91,8 +92,8 @@ export function ProfileDialog({
             </Avatar>
             <div className="flex-1 space-y-1">
               <h3>{user?.fullName || "Loading..."}</h3>
-              <Badge variant={isStaff ? "default" : "secondary"}>
-                {isStaff ? "Staff Member" : "Citizen"}
+              <Badge variant={isStaff || isAdmin ? "default" : "secondary"}>
+                {isAdmin ? "Administrator" : isStaff ? "Staff Member" : "Citizen"}
               </Badge>
             </div>
           </div>
@@ -124,7 +125,7 @@ export function ProfileDialog({
           <div className="space-y-3">
             <h4>Activity</h4>
             <div className="grid grid-cols-2 gap-3">
-              {!isStaff ? (
+              {!isStaff && !isAdmin ? (
                 <>
                   <div className="space-y-1">
                     <div className="flex items-center gap-1.5 text-muted-foreground">
@@ -146,16 +147,16 @@ export function ProfileDialog({
                   <div className="space-y-1">
                     <div className="flex items-center gap-1.5 text-muted-foreground">
                       <CheckCircle className="h-4 w-4" />
-                      <span>Resolved</span>
+                      <span>{isAdmin ? "System Actions" : "Resolved"}</span>
                     </div>
-                    <p>156</p>
+                    <p>{isAdmin ? "Unlimited" : "156"}</p>
                   </div>
                   <div className="space-y-1">
                     <div className="flex items-center gap-1.5 text-muted-foreground">
                       <User className="h-4 w-4" />
-                      <span>Assigned to Me</span>
+                      <span>{isAdmin ? "Users Managed" : "Assigned to Me"}</span>
                     </div>
-                    <p>23</p>
+                    <p>{isAdmin ? "All" : "23"}</p>
                   </div>
                 </>
               )}
