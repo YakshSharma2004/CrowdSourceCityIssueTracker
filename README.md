@@ -70,7 +70,7 @@ cityissuetracker/
 
 ---
 
-## Setup & Running
+# Setup & Running
 
 1.  **Install Dependencies**
     ```bash
